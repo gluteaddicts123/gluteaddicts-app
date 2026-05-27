@@ -1,72 +1,81 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister, setToken, clearToken } from './api.js';
+import * as API from './api.js';
 
-const AuthCtx = createContext(null);
-
-const STORAGE_KEY = 'ga_user';
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]       = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on mount
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setToken(parsed.token);
-        setUser(parsed);
+    API.validateToken().then(token => {
+      if (token) {
+        fetchCurrentUser();
+      } else {
+        setLoading(false);
       }
-    } catch (_) {}
-    setLoading(false);
+    });
   }, []);
 
+  async function fetchCurrentUser() {
+    try {
+      const res = await fetch('https://gluteaddictsmedellin.co/wp-json/wp/v2/users/me', {
+        headers: { Authorization: `Bearer ${API.getToken()}` },
+      });
+      const data = await res.json();
+      setUser({
+        id:    data.id,
+        name:  data.name,
+        email: data.email || data.slug,
+        phone: data.meta?.rc_phone || '',
+      });
+    } catch {
+      API.clearToken();
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function login(email, password) {
-    const data = await apiLogin(email, password);
-    const u = {
-      token:   data.token,
-      email:   data.user_email,
-      name:    data.user_display_name,
-      phone:   '',
-    };
-    setUser(u);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    return u;
+    const data = await API.login(email, password);
+    setUser({
+      id:    data.user_id,
+      name:  data.user_display_name,
+      email: data.user_email,
+      phone: '',
+    });
+    return data;
   }
 
   async function register(name, email, password) {
-    const data = await apiRegister(name, email, password);
-    const u = {
-      token:   data.token,
-      email:   data.user_email,
-      name:    data.user_display_name || name,
-      phone:   '',
-    };
-    setUser(u);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
-    return u;
+    const data = await API.register(name, email, password);
+    setUser({
+      id:    data.user_id,
+      name:  data.user_display_name,
+      email: data.user_email,
+      phone: '',
+    });
+    return data;
   }
 
   function logout() {
-    clearToken();
+    API.logout();
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   }
 
-  function updateUser(fields) {
-    const updated = { ...user, ...fields };
-    setUser(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  function updateUser(updates) {
+    setUser(prev => ({ ...prev, ...updates }));
   }
 
   return (
-    <AuthCtx.Provider value={{ user, loading, login, register, logout, updateUser }}>
-      {!loading && children}
-    </AuthCtx.Provider>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+      {loading
+        ? <div style={{ background: '#0a0a0a', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c9a84c', fontSize: 14 }}>⏳ Cargando...</div>
+        : children}
+    </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  return useContext(AuthCtx);
+  return useContext(AuthContext);
 }
