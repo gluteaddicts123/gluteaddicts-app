@@ -4,7 +4,6 @@ import { C, PACKAGES, DAYS, SCHEDULE, COUPONS, calcIva, calcTotal, applyDiscount
 import { Card, Badge, Btn, Input, Modal, Pill, Avatar, ProgressBar, CouponInput, Toast, ImageSlider } from './components.jsx';
 import * as API from './api.js';
 
-// ── Toast manager hook ────────────────────────────────────────────────────────
 function useToast() {
   const [toast, setToast] = useState(null);
   const show = useCallback((message, type = 'success') => {
@@ -29,13 +28,7 @@ function HomeScreen({ setScreen }) {
         <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(0deg,transparent,transparent 39px,${C.border}44 40px)`, opacity: .25 }} />
         <div style={{ position: 'relative' }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 4, color: C.gold, textTransform: 'uppercase', marginBottom: 14 }}>EL POBLADO · MEDELLÍN</div>
-          <img
-  src="https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png"
-  alt="Glute Addicts"
-  crossOrigin="anonymous"
-  style={{ height: 70, objectFit: 'contain', marginBottom: 16, display: 'block', margin: '0 auto 16px' }}
-/>
-          <div style={{ display: 'none', fontSize: 40, fontWeight: 900, lineHeight: 1.1, color: C.white, marginBottom: 6, fontStyle: 'italic' }}>
+          <div style={{ fontSize: 40, fontWeight: 900, lineHeight: 1.1, color: C.white, marginBottom: 6, fontStyle: 'italic' }}>
             GLUTE<br />
             <span style={{ background: `linear-gradient(135deg,${C.gold},${C.pink})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ADDICTS</span>
           </div>
@@ -47,13 +40,10 @@ function HomeScreen({ setScreen }) {
       </div>
 
       <div style={{ padding: '0 16px' }}>
-
-        {/* Image Slider */}
         <div style={{ marginTop: 20 }}>
           <ImageSlider />
         </div>
 
-        {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, margin: '20px 0' }}>
           {[
             { icon: '🔥', val: '60', lbl: 'Minutos' },
@@ -68,7 +58,6 @@ function HomeScreen({ setScreen }) {
           ))}
         </div>
 
-        {/* Address bar */}
         <div style={{ background: C.card, borderRadius: 12, padding: '12px 16px', marginBottom: 16, border: `1px solid ${C.border}` }}>
           <div style={{ fontSize: 12, color: C.grayL, marginBottom: 4 }}>📍 Cra. 35 #7-86, El Poblado, Medellín, Antioquia</div>
           <div style={{ fontSize: 12, color: C.gold, fontWeight: 700 }}>🗓 7 días a la semana + festivos</div>
@@ -127,23 +116,19 @@ function ScheduleScreen() {
   const [type, setType]             = useState('jumping');
   const [day, setDay]               = useState(DAYS[0]);
   const [booked, setBooked]         = useState({});
-  const [bookingKey, setBookingKey] = useState(null);
-  const [cpId, setCpId]             = useState('');
   const [loading, setLoading]       = useState(false);
-  const { show }                    = useToast();
+  const { show, toast }             = useToast();
 
   const slots = SCHEDULE[type][day] || [];
 
   async function reserve(slot) {
     if (!user) { show('Debes iniciar sesión para reservar.', 'error'); return; }
     const key = `${type}-${day}-${slot}`;
-    if (!cpId) { setBookingKey(key); return; }
     setLoading(true);
     try {
       await API.createBooking({
-        customer_package_id: parseInt(cpId),
         service_name: type === 'jumping' ? 'Solo Jumping' : 'Glúteos + Jumping',
-        booking_date: '2026-06-01',
+        booking_date: new Date().toISOString().split('T')[0],
         booking_time: slot,
       });
       setBooked({ ...booked, [key]: true });
@@ -156,6 +141,7 @@ function ScheduleScreen() {
 
   return (
     <div style={{ padding: '20px 16px' }}>
+      {toast && <Toast message={toast.message} type={toast.type} />}
       <div style={{ fontSize: 22, fontWeight: 900, color: C.white, marginBottom: 4 }}>Horarios</div>
       <div style={{ fontSize: 13, color: C.gray, marginBottom: 20 }}>7 días a la semana + festivos · Mañana & Tarde</div>
 
@@ -250,20 +236,20 @@ function PackagesScreen({ setScreen, setCheckoutPkg }) {
 // CHECKOUT
 // ══════════════════════════════════════════════════════════════════════════════
 function CheckoutScreen({ pkg, setScreen }) {
-  const { user }                    = useAuth();
-  const { show, toast }             = useToast();
-  const [step, setStep]             = useState(1);
-  const [splitMode, setSplit]       = useState(false);
-  const [members, setMembers]       = useState([]);
-  const [newName, setNewName]       = useState('');
-  const [newEmail, setNewEmail]     = useState('');
-  const [coupon, setCoupon]         = useState(null);
-  const [payMethod, setPayMethod]   = useState('');
-  const [cardNum, setCardNum]       = useState('');
-  const [cardExp, setCardExp]       = useState('');
-  const [cardCvv, setCardCvv]       = useState('');
-  const [processing, setProcessing] = useState(false);
-  const [cpId, setCpId]             = useState(null);
+  const { user }                      = useAuth();
+  const { show, toast }               = useToast();
+  const [step, setStep]               = useState(1);
+  const [splitMode, setSplit]         = useState(false);
+  const [members, setMembers]         = useState([]);
+  const [newName, setNewName]         = useState('');
+  const [newEmail, setNewEmail]       = useState('');
+  const [coupon, setCoupon]           = useState(null);
+  const [payMethod, setPayMethod]     = useState('');
+  const [cardNum, setCardNum]         = useState('');
+  const [cardExp, setCardExp]         = useState('');
+  const [cardCvv, setCardCvv]         = useState('');
+  const [processing, setProcessing]   = useState(false);
+  const [waiverAccepted, setWaiver]   = useState(false);
 
   if (!pkg) { setScreen('packages'); return null; }
   if (!user) {
@@ -295,12 +281,13 @@ function CheckoutScreen({ pkg, setScreen }) {
   }
 
   async function pay() {
-    if (!payMethod) return;
+    if (!payMethod || !waiverAccepted) return;
     setProcessing(true);
     try {
       const res    = await API.buyPackage(pkg.id);
-      setCpId(res.customer_package_id);
-      const params = await API.initiatePayment(res.customer_package_id, myShare);
+      const cpId   = res.customer_package_id;
+      await API.recordWaiverAcceptance(cpId);
+      const params = await API.initiatePayment(cpId, myShare);
       API.openWompiWidget(params, () => {
         setProcessing(false);
         setStep(4);
@@ -363,8 +350,8 @@ function CheckoutScreen({ pkg, setScreen }) {
         <div style={{ background: C.surface, borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.gray, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 10 }}>Resumen de pago</div>
           {[
-            { label: 'Precio del paquete', val: fmt(base), color: C.grayL },
-            { label: '+ IVA (19%)',        val: fmt(iva),  color: C.grayL },
+            { label: 'Precio del paquete', val: fmt(base),  color: C.grayL },
+            { label: '+ IVA (19%)',        val: fmt(iva),   color: C.grayL },
             coupon && { label: `Descuento (${coupon.code})`, val: `-${fmt(discAmt)}`, color: C.success },
           ].filter(Boolean).map((r, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 7 }}>
@@ -442,12 +429,14 @@ function CheckoutScreen({ pkg, setScreen }) {
       {step === 3 && <>
         <div style={{ fontWeight: 800, color: C.white, marginBottom: 4 }}>Pagar con Wompi</div>
         <div style={{ fontSize: 13, color: C.gray, marginBottom: 16 }}>Selecciona tu método de pago</div>
+
         <div style={{ background: C.surface, borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: C.gray, fontSize: 13 }}>Total a pagar</span>
             <span style={{ fontWeight: 900, fontSize: 18, color: C.gold }}>{fmt(myShare)}</span>
           </div>
         </div>
+
         {[
           { id: 'card',      icon: '💳', label: 'Tarjeta crédito / débito' },
           { id: 'nequi',     icon: '📱', label: 'Nequi' },
@@ -462,6 +451,7 @@ function CheckoutScreen({ pkg, setScreen }) {
             </div>
           </Card>
         ))}
+
         {payMethod === 'card' && (
           <Card style={{ marginTop: 12 }}>
             <Input label="Número de tarjeta" value={cardNum} onChange={v => setCardNum(v.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim())} placeholder="0000 0000 0000 0000" icon="💳" />
@@ -471,13 +461,47 @@ function CheckoutScreen({ pkg, setScreen }) {
             </div>
           </Card>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, margin: '16px 0 8px' }}>
+
+        {/* Waiver / Consent Form */}
+        <div style={{ background: C.surface, borderRadius: 12, padding: 14, marginTop: 16, marginBottom: 12, maxHeight: 220, overflowY: 'auto', border: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: C.gold, marginBottom: 10, letterSpacing: 1 }}>EXENCIÓN DE RESPONSABILIDAD — GLUTE ADDICTS</div>
+          {[
+            ['1. Asunción de Riesgo', 'La participación en actividades de ejercicio físico incluyendo entrenamientos en trampolín, entrenamiento de fuerza, cardio y clases grupales implica riesgos inherentes. El participante asume voluntariamente todos los riesgos asociados.'],
+            ['2. Declaración de Salud', 'El participante declara que se encuentra en buen estado de salud y es capaz de realizar actividad física. Se compromete a detener la actividad si presenta dolor, mareo o malestar.'],
+            ['3. Exención de Responsabilidad', 'El participante libera de responsabilidad a Glute Addicts, sus propietarios, empleados, entrenadores y afiliados por cualquier lesión, daño o pérdida derivada de la participación en actividades.'],
+            ['4. Autorización Médica de Emergencia', 'En caso de emergencia, el participante autoriza al personal de Glute Addicts a solicitar asistencia médica o servicios de emergencia si es necesario.'],
+            ['5. Protección de Datos', 'El participante autoriza a Glute Addicts a almacenar y procesar sus datos personales para fines administrativos, operativos y de comunicación conforme a la normativa aplicable.'],
+            ['6. Autorización de Foto y Video', 'Al ingresar a las instalaciones, el participante autoriza a Glute Addicts a tomar fotografías o videos durante las actividades y a utilizarlas con fines promocionales y en redes sociales.'],
+          ].map(([title, text]) => (
+            <div key={title} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.grayL, marginBottom: 3 }}>{title}</div>
+              <div style={{ fontSize: 11, color: C.gray, lineHeight: 1.6 }}>{text}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Consent checkbox */}
+        <div
+          onClick={() => setWaiver(w => !w)}
+          style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16, cursor: 'pointer', background: waiverAccepted ? C.success + '11' : C.surface, border: `1.5px solid ${waiverAccepted ? C.success : C.border}`, borderRadius: 12, padding: '12px 14px' }}
+        >
+          <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${waiverAccepted ? C.success : C.gray}`, background: waiverAccepted ? C.success : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+            {waiverAccepted && <span style={{ color: C.white, fontSize: 12, fontWeight: 900 }}>✓</span>}
+          </div>
+          <div style={{ fontSize: 12, color: C.grayL, lineHeight: 1.5 }}>
+            He leído y acepto la <strong style={{ color: C.gold }}>Exención de Responsabilidad</strong> de Glute Addicts
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, margin: '8px 0' }}>
           <span style={{ fontSize: 11, color: C.gray }}>Pagos seguros con</span>
           <span style={{ background: '#00A651', borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 900, color: '#fff' }}>wompi</span>
         </div>
-        <Btn variant={vBtn} full onClick={pay} disabled={!payMethod || processing} loading={processing}>
+
+        <Btn variant={vBtn} full onClick={pay} disabled={!payMethod || processing || !waiverAccepted} loading={processing}>
           {`Pagar ${fmt(myShare)}`}
         </Btn>
+        {!waiverAccepted && <div style={{ fontSize: 11, color: C.danger, textAlign: 'center', marginTop: 6 }}>⚠️ Debes aceptar la exención de responsabilidad para continuar</div>}
         <div style={{ fontSize: 10, color: C.grayD, textAlign: 'center', marginTop: 8 }}>🔒 Pago encriptado · Wompi Colombia</div>
         <Btn variant="ghost" full style={{ marginTop: 8 }} onClick={() => setStep(splitMode ? 2 : 1)}>← Volver</Btn>
       </>}
@@ -767,7 +791,7 @@ function Inner() {
   return (
     <div style={{ maxWidth: 430, margin: '0 auto', background: C.black, minHeight: '100vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 60px rgba(0,0,0,0.8)' }}>
       <div style={{ background: C.dark, padding: 'max(12px, env(safe-area-inset-top)) 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 200 }}>
-        <img src="https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png" alt="Glute Addicts" style={{ height: 28, objectFit: 'contain' }} />
+        <img src="https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png" alt="Glute Addicts" style={{ height: 28, objectFit: 'contain' }} onError={e => e.target.style.display = 'none'} />
         <div style={{ fontSize: 10, color: C.gray, textAlign: 'right', lineHeight: 1.5 }}>
           <div>🟢 ONLINE</div>
           <div style={{ color: '#00A651', fontWeight: 800 }}>WOMPI</div>
@@ -795,17 +819,14 @@ export default function App() {
         input { color:${C.white}; }
       `}</style>
       <div style={{
-  minHeight: '100vh',
-  background: `radial-gradient(ellipse at 30% 50%, ${C.gold}0a, transparent 60%), radial-gradient(ellipse at 70% 50%, ${C.pink}08, transparent 60%), #050505`,
-  display: 'flex',
-  alignItems: 'flex-start',
-  justifyContent: 'center',
-  paddingTop: 20,
-}}>
-  <AuthProvider>
-    <Inner />
-  </AuthProvider>
-</div>
+        minHeight: '100vh',
+        background: `radial-gradient(ellipse at 30% 50%, ${C.gold}0a, transparent 60%), radial-gradient(ellipse at 70% 50%, ${C.pink}08, transparent 60%), #050505`,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 20,
+      }}>
+        <AuthProvider>
+          <Inner />
+        </AuthProvider>
+      </div>
     </>
   );
 }
