@@ -233,7 +233,7 @@ function PackagesScreen({ setScreen, setCheckoutPkg }) {
                 {pkg.canShare  && <Badge color={C.success}>👥 Compartible</Badge>}
                 {pkg.canShare  && <Badge color={C.gold}>💳 Pago dividido</Badge>}
                 {pkg.unlimited && <Badge color={pkg.color}>∞ Ilimitado</Badge>}
-                <Badge color={C.grayD}>🏷️ Acepta cupones</Badge>
+                <Badge color={C.gold}>🏷️ Acepta cupones</Badge>
               </div>
               <Btn variant={vBtn} full onClick={() => { setCheckoutPkg(pkg); setScreen('checkout'); }}>
                 Comprar con Wompi →
