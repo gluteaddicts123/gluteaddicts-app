@@ -1,5 +1,5 @@
 const WP_API = 'https://gluteaddictsmedellin.co/wp-json/reservas-colombia/v1';
-const WP_BASE = 'https://gluteaddictsmedellin.co/wp-json/wp/v2';
+const GA_API = 'https://gluteaddictsmedellin.co/wp-json/ga/v1';
 
 // ── Auth storage ──────────────────────────────────────────────────────────────
 export function getToken() { return localStorage.getItem('rc_token'); }
@@ -27,44 +27,41 @@ async function api(path, options = {}) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export async function login(email, password) {
-  // Use basic auth to verify credentials
-  const token = btoa(`${email}:${password}`);
-  const res = await fetch(`${WP_BASE}/users/me`, {
-    headers: { Authorization: `Basic ${token}` },
+  const res = await fetch(`${GA_API}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error('Credenciales incorrectas.');
-  setToken(token);
-  setUser({ id: data.id, name: data.name, email: email, phone: '' });
+  if (!res.ok) throw new Error(data?.error || 'Credenciales incorrectas.');
+  setToken(data.token);
+  setUser({ id: data.id, name: data.name, email: data.email, phone: '' });
   return data;
 }
 
 export async function register(name, email, password) {
-  // Register via WooCommerce customer creation
-  const res = await fetch(`${WP_BASE}/users`, {
+  const res = await fetch(`${GA_API}/register`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      username: email.split('@')[0] + Math.floor(Math.random() * 1000),
-      email,
-      password,
-      name,
-      roles: ['customer'],
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.message || 'Error al registrarse.');
+  if (!res.ok) throw new Error(data?.error || 'Error al registrarse.');
   return await login(email, password);
 }
 
 export async function validateToken() {
   const token = getToken();
-  if (!token) return null;
+  const user  = getUser();
+  if (!token || !user) return null;
   try {
-    const res = await fetch(`${WP_BASE}/users/me`, {
-      headers: { Authorization: `Basic ${token}` },
+    const res = await fetch(`${GA_API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:    user.email,
+        password: atob(token).split(':')[1],
+      }),
     });
     if (!res.ok) { clearToken(); clearUser(); return null; }
     return token;
@@ -108,12 +105,12 @@ export async function initiatePayment(customerPackageId, amount, memberId = null
 
 export function openWompiWidget(params, onSuccess) {
   const checkout = new window.WidgetCheckout({
-    currency:       params.currency,
-    amountInCents:  params.amountInCents,
-    reference:      params.reference,
-    publicKey:      params.publicKey,
-    redirectUrl:    params.redirectUrl,
-    customerData:   params.customerData,
+    currency:      params.currency,
+    amountInCents: params.amountInCents,
+    reference:     params.reference,
+    publicKey:     params.publicKey,
+    redirectUrl:   params.redirectUrl,
+    customerData:  params.customerData,
   });
   checkout.open(result => {
     const tx = result.transaction;
