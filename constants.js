@@ -1,4 +1,4 @@
-// ── IVA ──────────────────────────────────────────────────────────────────────
+// ── IVA ───────────────────────────────────────────────────────────────────────
 export const IVA_RATE = 0.19;
 
 export function calcIva(base)   { return Math.round(base * IVA_RATE); }
@@ -33,7 +33,25 @@ export const C = {
   purple:  '#9b6dff',
 };
 
-// ── Packages (mirrors WordPress catalogue — kept in sync via API in production)
+// ── Studio info ───────────────────────────────────────────────────────────────
+export const STUDIO = {
+  name:    'Glute Addicts Medellín',
+  address: 'Cra. 35 #7-86, El Poblado, Medellín, Antioquia',
+  hours:   '7 días a la semana + festivos',
+  logo:    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png',
+};
+
+// ── Gallery (image slider) ────────────────────────────────────────────────────
+
+export const GALLERY = [
+  'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/PHOTO-2026-03-21-04-34-30-2-768x945.jpg',
+  'https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/PHOTO-2026-03-21-04-01-07.jpg',
+  'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/glutch-jump.jpeg',
+  'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/jumping-img.jpeg',
+];
+
+
+// ── Packages ──────────────────────────────────────────────────────────────────
 export const PACKAGES = [
   {
     id: 1,
@@ -104,7 +122,7 @@ export const SCHEDULE = {
   },
 };
 
-// ── Coupons (managed in WordPress admin — this is just for demo/offline mode)
+// ── Coupons ───────────────────────────────────────────────────────────────────
 export const COUPONS = {
   GLUTE10:    { type: 'percent', value: 10,    label: '10% de descuento' },
   BIENVENIDA: { type: 'percent', value: 15,    label: '15% descuento - Nuevo cliente' },
