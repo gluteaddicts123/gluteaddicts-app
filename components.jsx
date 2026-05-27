@@ -159,10 +159,10 @@ export function ImageSlider() {
   const [loaded, setLoaded]   = useState({});
 
   const images = [
-    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/PHOTO-2026-03-21-04-34-30-2-768x945.jpg',
-    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/PHOTO-2026-03-21-04-01-07.jpg',
     'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/glutch-jump.jpeg',
     'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/jumping-img.jpeg',
+    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/PHOTO-2026-03-21-04-34-30-2-768x945.jpg',
+    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/PHOTO-2026-03-21-04-01-07.jpg',
   ];
 
   // Preload all images immediately
