@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { C, COUPONS } from './constants.js';
+import { useState, useEffect } from 'react';
+import { C, COUPONS, STUDIO, GALLERY } from './constants.js';
 
 export function Pill({ children, color = C.gold, onClick, active }) {
   return (
@@ -139,7 +139,7 @@ export function Modal({ show, onClose, title, children }) {
   );
 }
 
-export function Toast({ message, type = 'success', onDone }) {
+export function Toast({ message, type = 'success' }) {
   const colors = { success: C.success, error: C.danger, info: C.gold };
   return (
     <div style={{
@@ -153,17 +153,81 @@ export function Toast({ message, type = 'success', onDone }) {
   );
 }
 
+// ── Logo header ───────────────────────────────────────────────────────────────
+export function LogoHeader() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 8px' }}>
+      <img
+        src={STUDIO.logo}
+        alt="Glute Addicts"
+        style={{ height: 52, objectFit: 'contain' }}
+        onError={e => { e.target.style.display = 'none'; }}
+      />
+    </div>
+  );
+}
+
+// ── Image slider ──────────────────────────────────────────────────────────────
+export function ImageSlider() {
+  const [current, setCurrent] = useState(0);
+  const images = GALLERY;
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const t = setInterval(() => setCurrent(c => (c + 1) % images.length), 3500);
+    return () => clearInterval(t);
+  }, [images.length]);
+
+  if (!images.length) return null;
+
+  return (
+    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 20, height: 200 }}>
+      {images.map((src, i) => (
+        <img key={i} src={src} alt={`slide ${i}`} style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
+          objectFit: 'cover', opacity: i === current ? 1 : 0,
+          transition: 'opacity .6s ease',
+        }} />
+      ))}
+      {images.length > 1 && (
+        <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+          {images.map((_, i) => (
+            <div key={i} onClick={() => setCurrent(i)} style={{
+              width: i === current ? 18 : 6, height: 6, borderRadius: 99,
+              background: i === current ? C.gold : C.grayD,
+              cursor: 'pointer', transition: 'all .3s',
+            }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Studio info bar ───────────────────────────────────────────────────────────
+export function StudioInfo() {
+  return (
+    <div style={{ background: C.card, borderRadius: 12, padding: '12px 16px', marginBottom: 16, border: `1px solid ${C.border}` }}>
+      <div style={{ fontSize: 12, color: C.grayL, marginBottom: 4 }}>
+        📍 {STUDIO.address}
+      </div>
+      <div style={{ fontSize: 12, color: C.gold, fontWeight: 700 }}>
+        🗓 {STUDIO.hours}
+      </div>
+    </div>
+  );
+}
+
 // ── Coupon input ──────────────────────────────────────────────────────────────
 export function CouponInput({ onApply, applied }) {
-  const [code, setCode]       = useState('');
-  const [error, setError]     = useState('');
-  const [checking, setCheck]  = useState(false);
+  const [code, setCode]      = useState('');
+  const [error, setError]    = useState('');
+  const [checking, setCheck] = useState(false);
 
   function apply() {
     const upper = code.trim().toUpperCase();
     if (!upper) return;
     setCheck(true); setError('');
-    // In production this would hit the WP API to validate
     setTimeout(() => {
       setCheck(false);
       if (COUPONS[upper]) {
@@ -177,9 +241,11 @@ export function CouponInput({ onApply, applied }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.gray, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 6 }}>🏷️ Código de descuento</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 8 }}>
+        🏷️ Código de descuento
+      </div>
       {applied ? (
-        <div style={{ background: C.success + '22', border: `1px solid ${C.success}44`, borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: C.success + '22', border: `1px solid ${C.success}`, borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.success }}>✓ {applied.code}</div>
             <div style={{ fontSize: 11, color: C.grayL }}>{applied.label}</div>
@@ -194,11 +260,21 @@ export function CouponInput({ onApply, applied }) {
               onChange={e => setCode(e.target.value.toUpperCase())}
               placeholder="Ej: GLUTE10"
               onKeyDown={e => e.key === 'Enter' && apply()}
-              style={{ flex: 1, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '11px 14px', color: C.white, fontSize: 13, fontFamily: 'inherit', outline: 'none', letterSpacing: 1, textTransform: 'uppercase' }}
-              onFocus={e => e.target.style.borderColor = C.gold}
-              onBlur={e => e.target.style.borderColor = C.border}
+              style={{
+                flex: 1,
+                background: C.surface,
+                border: `2px solid ${C.gold}`,
+                borderRadius: 10, padding: '11px 14px',
+                color: C.white, fontSize: 13,
+                fontFamily: 'inherit', outline: 'none',
+                letterSpacing: 1, textTransform: 'uppercase',
+              }}
+              onFocus={e => e.target.style.borderColor = C.goldL}
+              onBlur={e => e.target.style.borderColor = C.gold}
             />
-            <Btn variant="outline" small onClick={apply} disabled={!code || checking}>{checking ? '...' : 'Aplicar'}</Btn>
+            <Btn variant="outline" small onClick={apply} disabled={!code || checking}>
+              {checking ? '...' : 'Aplicar'}
+            </Btn>
           </div>
           {error && <div style={{ fontSize: 11, color: C.danger, marginTop: 6 }}>⚠️ {error}</div>}
         </>
@@ -209,30 +285,47 @@ export function CouponInput({ onApply, applied }) {
 
 // ── Price breakdown ───────────────────────────────────────────────────────────
 export function PriceBreakdown({ basePrice, coupon, splitParts = 1 }) {
-  const { calcIva, calcTotal, applyDiscount, fmt } = require('./constants.js');
-  // re-imported inline to avoid circular — use direct math instead:
-  const iva          = Math.round(basePrice * 0.19);
-  const withIva      = basePrice + iva;
-  const discountAmt  = coupon ? withIva - (coupon.data?.type === 'percent' ? Math.round(withIva * (1 - coupon.data.value / 100)) : Math.max(0, withIva - (coupon.data?.value || 0))) : 0;
-  const afterDisc    = withIva - discountAmt;
-  const myShare      = splitParts > 1 ? Math.round(afterDisc / splitParts) : afterDisc;
+  const iva         = Math.round(basePrice * 0.19);
+  const withIva     = basePrice + iva;
+  const discountAmt = coupon
+    ? withIva - (coupon.data?.type === 'percent'
+        ? Math.round(withIva * (1 - coupon.data.value / 100))
+        : Math.max(0, withIva - (coupon.data?.value || 0)))
+    : 0;
+  const afterDisc = withIva - discountAmt;
+  const myShare   = splitParts > 1 ? Math.round(afterDisc / splitParts) : afterDisc;
 
   const fmtN = n => '$' + Number(Math.round(n)).toLocaleString('es-CO') + ' COP';
 
   return (
     <div style={{ background: C.surface, borderRadius: 12, padding: 14, marginBottom: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.gray, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 10 }}>Resumen de pago</div>
-      {[
-        { label: 'Precio base',  val: fmtN(basePrice),   color: C.grayL },
-        { label: 'IVA (19%)',    val: fmtN(iva),          color: C.grayL },
-        coupon?.code && { label: `Descuento (${coupon.code})`, val: `-${fmtN(discountAmt)}`, color: C.success },
-        splitParts > 1 && { label: `Tu parte (÷${splitParts})`, val: fmtN(myShare), color: C.gold, bold: true },
-      ].filter(Boolean).map((r, i) => (
-        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
-          <span style={{ color: C.gray }}>{r.label}</span>
-          <span style={{ color: r.color, fontWeight: r.bold ? 800 : 400 }}>{r.val}</span>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.gray, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 10 }}>
+        Resumen de pago
+      </div>
+
+      {/* Package price + IVA shown separately */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
+        <span style={{ color: C.gray }}>Precio del paquete</span>
+        <span style={{ color: C.grayL }}>{fmtN(basePrice)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
+        <span style={{ color: C.gray }}>+ IVA (19%)</span>
+        <span style={{ color: C.grayL }}>{fmtN(iva)}</span>
+      </div>
+
+      {coupon?.code && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
+          <span style={{ color: C.gray }}>Descuento ({coupon.code})</span>
+          <span style={{ color: C.success }}>-{fmtN(discountAmt)}</span>
         </div>
-      ))}
+      )}
+      {splitParts > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
+          <span style={{ color: C.gray }}>Tu parte (÷{splitParts})</span>
+          <span style={{ color: C.gold, fontWeight: 800 }}>{fmtN(myShare)}</span>
+        </div>
+      )}
+
       <div style={{ height: 1, background: C.border, margin: '10px 0' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ fontWeight: 800, color: C.white }}>Total a pagar</span>
