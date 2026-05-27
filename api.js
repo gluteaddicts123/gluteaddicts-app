@@ -1,10 +1,13 @@
 const WP_API = 'https://gluteaddictsmedellin.co/wp-json/reservas-colombia/v1';
-const WP_AUTH = 'https://gluteaddictsmedellin.co/wp-json/jwt-auth/v1';
+const WP_BASE = 'https://gluteaddictsmedellin.co/wp-json/wp/v2';
 
-// ── Auth token storage ────────────────────────────────────────────────────────
+// ── Auth storage ──────────────────────────────────────────────────────────────
 export function getToken() { return localStorage.getItem('rc_token'); }
 export function setToken(t) { localStorage.setItem('rc_token', t); }
 export function clearToken() { localStorage.removeItem('rc_token'); }
+export function getUser() { try { return JSON.parse(localStorage.getItem('rc_user')); } catch { return null; } }
+export function setUser(u) { localStorage.setItem('rc_user', JSON.stringify(u)); }
+export function clearUser() { localStorage.removeItem('rc_user'); }
 
 // ── Base fetch ────────────────────────────────────────────────────────────────
 async function api(path, options = {}) {
@@ -13,7 +16,7 @@ async function api(path, options = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { Authorization: `Basic ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -24,22 +27,32 @@ async function api(path, options = {}) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export async function login(email, password) {
-  const res = await fetch(`${WP_AUTH}/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: email, password }),
+  // Use basic auth to verify credentials
+  const token = btoa(`${email}:${password}`);
+  const res = await fetch(`${WP_BASE}/users/me`, {
+    headers: { Authorization: `Basic ${token}` },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.message || 'Credenciales incorrectas.');
-  setToken(data.token);
+  if (!res.ok) throw new Error('Credenciales incorrectas.');
+  setToken(token);
+  setUser({ id: data.id, name: data.name, email: email, phone: '' });
   return data;
 }
 
 export async function register(name, email, password) {
-  const res = await fetch('https://gluteaddictsmedellin.co/wp-json/wp/v2/users/register', {
+  // Register via WooCommerce customer creation
+  const res = await fetch(`${WP_BASE}/users`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: email, email, password, display_name: name }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      username: email.split('@')[0] + Math.floor(Math.random() * 1000),
+      email,
+      password,
+      name,
+      roles: ['customer'],
+    }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.message || 'Error al registrarse.');
@@ -50,19 +63,19 @@ export async function validateToken() {
   const token = getToken();
   if (!token) return null;
   try {
-    const res = await fetch(`${WP_AUTH}/token/validate`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await fetch(`${WP_BASE}/users/me`, {
+      headers: { Authorization: `Basic ${token}` },
     });
-    if (!res.ok) { clearToken(); return null; }
+    if (!res.ok) { clearToken(); clearUser(); return null; }
     return token;
   } catch {
     clearToken();
+    clearUser();
     return null;
   }
 }
 
-export function logout() { clearToken(); }
+export function logout() { clearToken(); clearUser(); }
 
 // ── Packages ──────────────────────────────────────────────────────────────────
 export async function getPackages() {
