@@ -181,29 +181,47 @@ export function ImageSlider() {
   if (!images.length) return null;
 
   return (
-    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 20, height: 200 }}>
+    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 4, height: 220, background: C.surface }}>
       {images.map((src, i) => (
-        <img key={i} src={src} alt={`slide ${i}`} style={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%',
-          objectFit: 'cover', opacity: i === current ? 1 : 0,
-          transition: 'opacity .6s ease',
-        }} />
+        <img
+          key={i}
+          src={src}
+          alt={`slide ${i}`}
+          crossOrigin="anonymous"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            opacity: i === current ? 1 : 0,
+            transition: 'opacity .6s ease',
+          }}
+        />
       ))}
+      {/* Gradient overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }} />
+      {/* Dots */}
       {images.length > 1 && (
-        <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+        <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
           {images.map((_, i) => (
-            <div key={i} onClick={() => setCurrent(i)} style={{
-              width: i === current ? 18 : 6, height: 6, borderRadius: 99,
-              background: i === current ? C.gold : C.grayD,
-              cursor: 'pointer', transition: 'all .3s',
-            }} />
+            <div
+              key={i}
+              onClick={() => setCurrent(i)}
+              style={{
+                width: i === current ? 20 : 6,
+                height: 6,
+                borderRadius: 99,
+                background: i === current ? C.gold : 'rgba(255,255,255,0.5)',
+                cursor: 'pointer',
+                transition: 'all .3s',
+              }}
+            />
           ))}
         </div>
       )}
     </div>
   );
 }
-
 // ── Studio info bar ───────────────────────────────────────────────────────────
 export function StudioInfo() {
   return (
