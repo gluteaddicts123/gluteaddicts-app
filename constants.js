@@ -93,8 +93,8 @@ export const PACKAGES = [
     color:     C.purple,
     icon:      '⚡',
     perks:     ['Clases ilimitadas', 'Válido 30 días', 'Jumping + Combo incluido', 'Prioridad en reservas'],
-    canShare:  false,
-    maxMembers: 0,
+    canShare:  true,
+    maxMembers: 2,
   },
 ];
 
