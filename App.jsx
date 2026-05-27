@@ -30,14 +30,11 @@ function HomeScreen({ setScreen }) {
         <div style={{ position: 'relative' }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 4, color: C.gold, textTransform: 'uppercase', marginBottom: 14 }}>EL POBLADO · MEDELLÍN</div>
           <img
-            src="https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png"
-            alt="Glute Addicts"
-            style={{ height: 70, objectFit: 'contain', marginBottom: 16 }}
-            onError={e => {
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'block';
-            }}
-          />
+  src="https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png"
+  alt="Glute Addicts"
+  crossOrigin="anonymous"
+  style={{ height: 70, objectFit: 'contain', marginBottom: 16, display: 'block', margin: '0 auto 16px' }}
+/>
           <div style={{ display: 'none', fontSize: 40, fontWeight: 900, lineHeight: 1.1, color: C.white, marginBottom: 6, fontStyle: 'italic' }}>
             GLUTE<br />
             <span style={{ background: `linear-gradient(135deg,${C.gold},${C.pink})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>ADDICTS</span>
