@@ -153,23 +153,11 @@ export function Toast({ message, type = 'success' }) {
   );
 }
 
-// ── Logo header ───────────────────────────────────────────────────────────────
-export function LogoHeader() {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 8px' }}>
-      <img
-        src={STUDIO.logo}
-        alt="Glute Addicts"
-        style={{ height: 52, objectFit: 'contain' }}
-        onError={e => { e.target.style.display = 'none'; }}
-      />
-    </div>
-  );
-}
-
-// ── Image slider ──────────────────────────────────────────────────────────────
+// ── Image Slider ──────────────────────────────────────────────────────────────
 export function ImageSlider() {
   const [current, setCurrent] = useState(0);
+  const [loaded, setLoaded]   = useState({});
+
   const images = [
     'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/PHOTO-2026-03-21-04-34-30-2-768x945.jpg',
     'https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/PHOTO-2026-03-21-04-01-07.jpg',
@@ -177,49 +165,69 @@ export function ImageSlider() {
     'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/jumping-img.jpeg',
   ];
 
+  // Preload all images immediately
   useEffect(() => {
-    const t = setInterval(() => setCurrent(c => (c + 1) % images.length), 4000);
-    return () => clearInterval(t);
+    images.forEach((src, i) => {
+      const img = new window.Image();
+      img.onload = () => setLoaded(p => ({ ...p, [i]: true }));
+      img.src = src;
+    });
   }, []);
 
-  // Preload all images
+  // Auto advance only after first image is loaded
   useEffect(() => {
-    images.forEach(src => { const img = new Image(); img.src = src; });
-  }, []);
+    if (!loaded[0]) return;
+    const t = setInterval(() => setCurrent(c => (c + 1) % images.length), 4000);
+    return () => clearInterval(t);
+  }, [loaded[0]]);
 
   return (
     <div style={{
       position: 'relative',
       width: '100%',
-      paddingBottom: '100%', // Square ratio
+      paddingBottom: '100%',
       borderRadius: 16,
       overflow: 'hidden',
       background: C.surface,
       marginBottom: 16,
     }}>
       <div style={{ position: 'absolute', inset: 0 }}>
+
+        {/* Loading placeholder */}
+        {!loaded[current] && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 3,
+            background: C.surface,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{ fontSize: 13, color: C.gray }}>⏳ Cargando...</div>
+          </div>
+        )}
+
+        {/* Images */}
         {images.map((src, i) => (
           <img
             key={i}
             src={src}
             alt={`slide ${i}`}
-            loading={i === 0 ? 'eager' : 'lazy'}
+            onLoad={() => setLoaded(p => ({ ...p, [i]: true }))}
             style={{
               position: 'absolute', inset: 0,
               width: '100%', height: '100%',
               objectFit: 'cover',
               objectPosition: 'center top',
-              opacity: i === current ? 1 : 0,
+              opacity: i === current && loaded[i] ? 1 : 0,
               transition: 'opacity .5s ease',
             }}
           />
         ))}
+
         {/* Gradient overlay */}
         <div style={{
-          position: 'absolute', inset: 0,
+          position: 'absolute', inset: 0, zIndex: 1,
           background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 50%)',
-          zIndex: 1,
         }} />
+
         {/* Dots */}
         <div style={{
           position: 'absolute', bottom: 14, left: '50%',
@@ -239,19 +247,6 @@ export function ImageSlider() {
             />
           ))}
         </div>
-      </div>
-    </div>
-  );
-}
-// ── Studio info bar ───────────────────────────────────────────────────────────
-export function StudioInfo() {
-  return (
-    <div style={{ background: C.card, borderRadius: 12, padding: '12px 16px', marginBottom: 16, border: `1px solid ${C.border}` }}>
-      <div style={{ fontSize: 12, color: C.grayL, marginBottom: 4 }}>
-        📍 {STUDIO.address}
-      </div>
-      <div style={{ fontSize: 12, color: C.gold, fontWeight: 700 }}>
-        🗓 {STUDIO.hours}
       </div>
     </div>
   );
@@ -280,10 +275,18 @@ export function CouponInput({ onApply, applied }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-     <div style={{ background: `${C.gold}22`, border: `1.5px solid ${C.gold}`, borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
-  <div style={{ fontSize: 12, fontWeight: 800, color: C.gold, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 2 }}>🏷️ ¿Tienes un cupón?</div>
-  <div style={{ fontSize: 11, color: C.grayL }}>Ingresa tu código y obtén descuento</div>
-</div>
+      {/* Highlighted coupon header box */}
+      <div style={{
+        background: `${C.gold}22`,
+        border: `1.5px solid ${C.gold}`,
+        borderRadius: 12, padding: '12px 14px', marginBottom: 12,
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.gold, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 2 }}>
+          🏷️ ¿Tienes un cupón?
+        </div>
+        <div style={{ fontSize: 11, color: C.grayL }}>Ingresa tu código y obtén descuento</div>
+      </div>
+
       {applied ? (
         <div style={{ background: C.success + '22', border: `1px solid ${C.success}`, borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -342,8 +345,6 @@ export function PriceBreakdown({ basePrice, coupon, splitParts = 1 }) {
       <div style={{ fontSize: 11, fontWeight: 700, color: C.gray, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 10 }}>
         Resumen de pago
       </div>
-
-      {/* Package price + IVA shown separately */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
         <span style={{ color: C.gray }}>Precio del paquete</span>
         <span style={{ color: C.grayL }}>{fmtN(basePrice)}</span>
@@ -352,7 +353,6 @@ export function PriceBreakdown({ basePrice, coupon, splitParts = 1 }) {
         <span style={{ color: C.gray }}>+ IVA (19%)</span>
         <span style={{ color: C.grayL }}>{fmtN(iva)}</span>
       </div>
-
       {coupon?.code && (
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 7, fontSize: 13 }}>
           <span style={{ color: C.gray }}>Descuento ({coupon.code})</span>
@@ -365,7 +365,6 @@ export function PriceBreakdown({ basePrice, coupon, splitParts = 1 }) {
           <span style={{ color: C.gold, fontWeight: 800 }}>{fmtN(myShare)}</span>
         </div>
       )}
-
       <div style={{ height: 1, background: C.border, margin: '10px 0' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span style={{ fontWeight: 800, color: C.white }}>Total a pagar</span>
