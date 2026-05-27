@@ -765,7 +765,7 @@ function Inner() {
   };
 
   return (
-    <div style={{ maxWidth: 430, margin: '0 auto', background: C.black, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ maxWidth: 430, margin: '0 auto', background: C.black, minHeight: '100vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 60px rgba(0,0,0,0.8)' }}>
       <div style={{ background: C.dark, padding: 'max(12px, env(safe-area-inset-top)) 20px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 200 }}>
         <img src="https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/Logo-2.png" alt="Glute Addicts" style={{ height: 28, objectFit: 'contain' }} />
         <div style={{ fontSize: 10, color: C.gray, textAlign: 'right', lineHeight: 1.5 }}>
@@ -794,9 +794,18 @@ export default function App() {
         input::placeholder { color:${C.grayD}; }
         input { color:${C.white}; }
       `}</style>
-      <AuthProvider>
-        <Inner />
-      </AuthProvider>
+      <div style={{
+  minHeight: '100vh',
+  background: `radial-gradient(ellipse at 30% 50%, ${C.gold}0a, transparent 60%), radial-gradient(ellipse at 70% 50%, ${C.pink}08, transparent 60%), #050505`,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  paddingTop: 20,
+}}>
+  <AuthProvider>
+    <Inner />
+  </AuthProvider>
+</div>
     </>
   );
 }
