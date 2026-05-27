@@ -241,9 +241,10 @@ export function CouponInput({ onApply, applied }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 8 }}>
-        🏷️ Código de descuento
-      </div>
+     <div style={{ background: `${C.gold}22`, border: `1.5px solid ${C.gold}`, borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+  <div style={{ fontSize: 12, fontWeight: 800, color: C.gold, letterSpacing: .8, textTransform: 'uppercase', marginBottom: 2 }}>🏷️ ¿Tienes un cupón?</div>
+  <div style={{ fontSize: 11, color: C.grayL }}>Ingresa tu código y obtén descuento</div>
+</div>
       {applied ? (
         <div style={{ background: C.success + '22', border: `1px solid ${C.success}`, borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
