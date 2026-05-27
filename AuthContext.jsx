@@ -8,41 +8,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.validateToken().then(token => {
-      if (token) {
-        fetchCurrentUser();
-      } else {
+    const savedUser = API.getUser();
+    if (savedUser) {
+      API.validateToken().then(token => {
+        if (token) {
+          setUser(savedUser);
+        } else {
+          API.clearUser();
+        }
         setLoading(false);
-      }
-    });
-  }, []);
-
-  async function fetchCurrentUser() {
-    try {
-      const res = await fetch('https://gluteaddictsmedellin.co/wp-json/wp/v2/users/me', {
-        headers: { Authorization: `Bearer ${API.getToken()}` },
       });
-      const data = await res.json();
-      setUser({
-        id:    data.id,
-        name:  data.name,
-        email: data.email || data.slug,
-        phone: data.meta?.rc_phone || '',
-      });
-    } catch {
-      API.clearToken();
-    } finally {
+    } else {
       setLoading(false);
     }
-  }
+  }, []);
 
   async function login(email, password) {
     const data = await API.login(email, password);
     setUser({
-      id:    data.user_id,
-      name:  data.user_display_name,
-      email: data.user_email,
-      phone: '',
+      id:    data.id,
+      name:  data.name,
+      email: email,
+      phone: data.meta?.rc_phone || '',
     });
     return data;
   }
@@ -50,9 +37,9 @@ export function AuthProvider({ children }) {
   async function register(name, email, password) {
     const data = await API.register(name, email, password);
     setUser({
-      id:    data.user_id,
-      name:  data.user_display_name,
-      email: data.user_email,
+      id:    data.id,
+      name:  data.name,
+      email: email,
       phone: '',
     });
     return data;
@@ -64,7 +51,9 @@ export function AuthProvider({ children }) {
   }
 
   function updateUser(updates) {
-    setUser(prev => ({ ...prev, ...updates }));
+    const updated = { ...user, ...updates };
+    setUser(updated);
+    API.setUser(updated);
   }
 
   return (
