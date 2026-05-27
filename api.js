@@ -1,152 +1,101 @@
-/**
- * api.js — All calls to the WordPress REST API (Reservas Colombia plugin)
- *
- * Base URL is read from the env variable VITE_WP_URL.
- * Set it in Vercel → Settings → Environment Variables:
- *   VITE_WP_URL = https://gluteaddictsmedellin.co
- */
+const WP_API = 'https://gluteaddictsmedellin.co/wp-json/reservas-colombia/v1';
+const WP_AUTH = 'https://gluteaddictsmedellin.co/wp-json/jwt-auth/v1';
 
-const WP = import.meta.env.VITE_WP_URL || 'https://gluteaddictsmedellin.co';
-const BASE = `${WP}/wp-json`;
+// ── Auth token storage ────────────────────────────────────────────────────────
+export function getToken() { return localStorage.getItem('rc_token'); }
+export function setToken(t) { localStorage.setItem('rc_token', t); }
+export function clearToken() { localStorage.removeItem('rc_token'); }
 
-let _token = null; // WP auth token stored in memory
-
-// ── Auth helpers ──────────────────────────────────────────────────────────────
-export function setToken(t) { _token = t; }
-export function clearToken() { _token = null; }
-
-function headers(extra = {}) {
-  const h = { 'Content-Type': 'application/json', ...extra };
-  if (_token) h['Authorization'] = `Bearer ${_token}`;
-  return h;
-}
-
-async function request(path, method = 'GET', body = null) {
-  const opts = { method, headers: headers() };
-  if (body) opts.body = JSON.stringify(body);
-
-  const res = await fetch(`${BASE}${path}`, opts);
-
-  if (res.status === 401) {
-    clearToken();
-    throw new Error('session_expired');
-  }
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-// ── JWT Auth (requires JWT Authentication for WP-API plugin) ─────────────────
-export async function login(username, password) {
-  const res = await fetch(`${WP}/wp-json/jwt-auth/v1/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+// ── Base fetch ────────────────────────────────────────────────────────────────
+async function api(path, options = {}) {
+  const token = getToken();
+  const res = await fetch(`${WP_API}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Login failed');
+  if (!res.ok) throw new Error(data?.message || data?.error || 'Error en la solicitud.');
+  return data;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+export async function login(email, password) {
+  const res = await fetch(`${WP_AUTH}/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.message || 'Credenciales incorrectas.');
   setToken(data.token);
-  return data; // { token, user_email, user_nicename, user_display_name }
+  return data;
 }
 
 export async function register(name, email, password) {
-  // Uses WP's built-in user registration endpoint
-  const res = await fetch(`${WP}/wp-json/wp/v2/users/register`, {
+  const res = await fetch('https://gluteaddictsmedellin.co/wp-json/wp/v2/users/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: email, email, password, display_name: name }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Registration failed');
-  // Auto-login after register
-  return login(email, password);
+  if (!res.ok) throw new Error(data?.message || 'Error al registrarse.');
+  return await login(email, password);
 }
 
-// ── REST Nonce (for logged-in WP sessions via cookie) ────────────────────────
-export function setNonce(nonce) {
-  // Alternative to JWT — set nonce from wp_rest nonce if embedded in WP page
-  _token = null;
-  headers['X-WP-Nonce'] = nonce;
-}
-
-// ── Packages catalogue ────────────────────────────────────────────────────────
-export const getPackages = () =>
-  request('/reservas-colombia/v1/packages');
-
-// ── My packages ───────────────────────────────────────────────────────────────
-export const getMyPackages = () =>
-  request('/reservas-colombia/v1/my-packages');
-
-export const getPackageDetail = (cpId) =>
-  request(`/reservas-colombia/v1/my-packages/${cpId}`);
-
-// ── Purchase ──────────────────────────────────────────────────────────────────
-export const buyPackage = (packageId) =>
-  request(`/reservas-colombia/v1/packages/${packageId}/buy`, 'POST');
-
-// ── Payment ───────────────────────────────────────────────────────────────────
-export const initiatePayment = (customerPackageId, amount, memberId = null) =>
-  request('/reservas-colombia/v1/payments/initiate', 'POST', {
-    customer_package_id: customerPackageId,
-    amount,
-    ...(memberId ? { member_id: memberId } : {}),
-  });
-
-// ── Sharing ───────────────────────────────────────────────────────────────────
-export const inviteMember = (cpId, name, email, sessionsAllocated = 0, paymentShare = 0) =>
-  request(`/reservas-colombia/v1/my-packages/${cpId}/invite`, 'POST', {
-    name, email,
-    sessions_allocated: sessionsAllocated,
-    payment_share:      paymentShare,
-  });
-
-export const removeMember = (memberId) =>
-  request(`/reservas-colombia/v1/members/${memberId}`, 'DELETE');
-
-export const getSplitInfo = (cpId) =>
-  request(`/reservas-colombia/v1/my-packages/${cpId}/split`);
-
-// ── Bookings ──────────────────────────────────────────────────────────────────
-export const getMyBookings = () =>
-  request('/reservas-colombia/v1/bookings');
-
-export const createBooking = (data) =>
-  request('/reservas-colombia/v1/bookings', 'POST', data);
-
-export const cancelBooking = (bookingId) =>
-  request(`/reservas-colombia/v1/bookings/${bookingId}/cancel`, 'POST');
-
-// ── Services ──────────────────────────────────────────────────────────────────
-export const getServices = () =>
-  request('/reservas-colombia/v1/services');
-
-// ── Wompi widget loader ───────────────────────────────────────────────────────
-/**
- * Dynamically loads the Wompi checkout script and opens the widget.
- *
- * @param {object} params  - Response from initiatePayment()
- * @param {function} onSuccess - Called with transaction when approved
- */
-export function openWompiWidget(params, onSuccess) {
-  const existing = document.getElementById('wompi-script');
-  if (existing) {
-    _mountWidget(params, onSuccess);
-    return;
+export async function validateToken() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${WP_AUTH}/token/validate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { clearToken(); return null; }
+    return token;
+  } catch {
+    clearToken();
+    return null;
   }
-  const s = document.createElement('script');
-  s.id  = 'wompi-script';
-  s.src = 'https://checkout.wompi.co/widget.js';
-  s.setAttribute('data-render', 'false');
-  s.onload = () => _mountWidget(params, onSuccess);
-  document.head.appendChild(s);
 }
 
-function _mountWidget(params, onSuccess) {
-  // eslint-disable-next-line no-undef
-  const checkout = new WidgetCheckout({
-    currency:       'COP',
+export function logout() { clearToken(); }
+
+// ── Packages ──────────────────────────────────────────────────────────────────
+export async function getPackages() {
+  return api('/packages');
+}
+
+export async function buyPackage(packageId) {
+  return api(`/packages/${packageId}/buy`, { method: 'POST' });
+}
+
+export async function getMyPackages() {
+  return api('/my-packages');
+}
+
+export async function getPackageDetail(cpId) {
+  return api(`/my-packages/${cpId}`);
+}
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+export async function initiatePayment(customerPackageId, amount, memberId = null) {
+  return api('/payments/initiate', {
+    method: 'POST',
+    body: JSON.stringify({
+      customer_package_id: customerPackageId,
+      amount,
+      ...(memberId ? { member_id: memberId } : {}),
+    }),
+  });
+}
+
+export function openWompiWidget(params, onSuccess) {
+  const checkout = new window.WidgetCheckout({
+    currency:       params.currency,
     amountInCents:  params.amountInCents,
     reference:      params.reference,
     publicKey:      params.publicKey,
@@ -154,8 +103,52 @@ function _mountWidget(params, onSuccess) {
     customerData:   params.customerData,
   });
   checkout.open(result => {
-    if (result?.transaction?.status === 'APPROVED') {
-      onSuccess(result.transaction);
+    const tx = result.transaction;
+    if (tx && tx.status === 'APPROVED') {
+      onSuccess(tx);
     }
+  });
+}
+
+// ── Bookings ──────────────────────────────────────────────────────────────────
+export async function createBooking(data) {
+  return api('/bookings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function cancelBooking(bookingId) {
+  return api(`/bookings/${bookingId}/cancel`, { method: 'POST' });
+}
+
+export async function getMyBookings() {
+  return api('/bookings');
+}
+
+// ── Sharing ───────────────────────────────────────────────────────────────────
+export async function inviteMember(cpId, name, email, sessionsAllocated = 0, paymentShare = 0) {
+  return api(`/my-packages/${cpId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify({ name, email, sessions_allocated: sessionsAllocated, payment_share: paymentShare }),
+  });
+}
+
+export async function removeMember(memberId) {
+  return api(`/members/${memberId}`, { method: 'DELETE' });
+}
+
+export async function getSplitInfo(cpId) {
+  return api(`/my-packages/${cpId}/split`);
+}
+
+// ── Waiver ────────────────────────────────────────────────────────────────────
+export async function recordWaiverAcceptance(cpId) {
+  return api('/waiver/accept', {
+    method: 'POST',
+    body: JSON.stringify({
+      customer_package_id: cpId,
+      accepted_at: new Date().toISOString(),
+    }),
   });
 }
