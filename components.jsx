@@ -170,55 +170,76 @@ export function LogoHeader() {
 // ── Image slider ──────────────────────────────────────────────────────────────
 export function ImageSlider() {
   const [current, setCurrent] = useState(0);
-  const images = GALLERY;
+  const images = [
+    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/PHOTO-2026-03-21-04-34-30-2-768x945.jpg',
+    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/01/PHOTO-2026-03-21-04-01-07.jpg',
+    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/glutch-jump.jpeg',
+    'https://gluteaddictsmedellin.co/wp-content/uploads/2026/03/jumping-img.jpeg',
+  ];
 
   useEffect(() => {
-    if (images.length <= 1) return;
-    const t = setInterval(() => setCurrent(c => (c + 1) % images.length), 3500);
+    const t = setInterval(() => setCurrent(c => (c + 1) % images.length), 4000);
     return () => clearInterval(t);
-  }, [images.length]);
+  }, []);
 
-  if (!images.length) return null;
+  // Preload all images
+  useEffect(() => {
+    images.forEach(src => { const img = new Image(); img.src = src; });
+  }, []);
 
   return (
-    <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', marginBottom: 4, height: 220, background: C.surface }}>
-      {images.map((src, i) => (
-        <img
-          key={i}
-          src={src}
-          alt={`slide ${i}`}
-          crossOrigin="anonymous"
-          style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-            opacity: i === current ? 1 : 0,
-            transition: 'opacity .6s ease',
-          }}
-        />
-      ))}
-      {/* Gradient overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }} />
-      {/* Dots */}
-      {images.length > 1 && (
-        <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 6 }}>
+    <div style={{
+      position: 'relative',
+      width: '100%',
+      paddingBottom: '100%', // Square ratio
+      borderRadius: 16,
+      overflow: 'hidden',
+      background: C.surface,
+      marginBottom: 16,
+    }}>
+      <div style={{ position: 'absolute', inset: 0 }}>
+        {images.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt={`slide ${i}`}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center top',
+              opacity: i === current ? 1 : 0,
+              transition: 'opacity .5s ease',
+            }}
+          />
+        ))}
+        {/* Gradient overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.35) 0%, transparent 50%)',
+          zIndex: 1,
+        }} />
+        {/* Dots */}
+        <div style={{
+          position: 'absolute', bottom: 14, left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex', gap: 6, zIndex: 2,
+        }}>
           {images.map((_, i) => (
             <div
               key={i}
               onClick={() => setCurrent(i)}
               style={{
                 width: i === current ? 20 : 6,
-                height: 6,
-                borderRadius: 99,
+                height: 6, borderRadius: 99,
                 background: i === current ? C.gold : 'rgba(255,255,255,0.5)',
-                cursor: 'pointer',
-                transition: 'all .3s',
+                cursor: 'pointer', transition: 'all .3s',
               }}
             />
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
