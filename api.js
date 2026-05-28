@@ -2,20 +2,26 @@ const WP_API = 'https://gluteaddictsmedellin.co/wp-json/reservas-colombia/v1';
 const GA_API = 'https://gluteaddictsmedellin.co/wp-json/ga/v1';
 
 // ── Auth storage ──────────────────────────────────────────────────────────────
-export function getToken() { return localStorage.getItem('rc_token'); }
+export function getToken()  { return localStorage.getItem('rc_token'); }
 export function setToken(t) { localStorage.setItem('rc_token', t); }
-export function clearToken() { localStorage.removeItem('rc_token'); }
-export function getUser() { try { return JSON.parse(localStorage.getItem('rc_user')); } catch { return null; } }
-export function setUser(u) { localStorage.setItem('rc_user', JSON.stringify(u)); }
+export function clearToken(){ localStorage.removeItem('rc_token'); }
+export function getNonce()  { return localStorage.getItem('rc_nonce'); }
+export function setNonce(n) { localStorage.setItem('rc_nonce', n); }
+export function clearNonce(){ localStorage.removeItem('rc_nonce'); }
+export function getUser()   { try { return JSON.parse(localStorage.getItem('rc_user')); } catch { return null; } }
+export function setUser(u)  { localStorage.setItem('rc_user', JSON.stringify(u)); }
 export function clearUser() { localStorage.removeItem('rc_user'); }
 
 // ── Base fetch ────────────────────────────────────────────────────────────────
 async function api(path, options = {}) {
+  const nonce = getNonce();
   const token = getToken();
   const res = await fetch(`${WP_API}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(nonce ? { 'X-WP-Nonce': nonce } : {}),
       ...(token ? { Authorization: `Basic ${token}` } : {}),
       ...(options.headers || {}),
     },
@@ -27,14 +33,16 @@ async function api(path, options = {}) {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export async function login(email, password) {
-  const res = await fetch(`${GA_API}/login`, {
+  const res = await fetch(`${GA_API}/auth-cookie`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Credenciales incorrectas.');
   setToken(data.token);
+  setNonce(data.nonce);
   setUser({ id: data.id, name: data.name, email: data.email, phone: '' });
   return data;
 }
@@ -57,22 +65,26 @@ export async function validateToken() {
   try {
     const res = await fetch(`${GA_API}/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email:    user.email,
         password: atob(token).split(':')[1],
       }),
     });
-    if (!res.ok) { clearToken(); clearUser(); return null; }
+    if (!res.ok) { clearToken(); clearNonce(); clearUser(); return null; }
+    const data = await res.json();
+    if (data.nonce) setNonce(data.nonce);
     return token;
   } catch {
     clearToken();
+    clearNonce();
     clearUser();
     return null;
   }
 }
 
-export function logout() { clearToken(); clearUser(); }
+export function logout() { clearToken(); clearNonce(); clearUser(); }
 
 // ── Packages ──────────────────────────────────────────────────────────────────
 export async function getPackages() {
